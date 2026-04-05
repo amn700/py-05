@@ -1,38 +1,41 @@
-from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Tuple, Union
+import abc
+import typing
 
 
-class DataProcessor(ABC):
+class DataProcessor(abc.ABC):
     def __init__(self) -> None:
-        self._queue: List[Tuple[int, str]] = []
+        self._queue: typing.List[typing.Tuple[int, str]] = []
         self._next_rank = 0
 
-    @abstractmethod
-    def validate(self, data: Any) -> bool:
+    @abc.abstractmethod
+    def validate(self, data: typing.Any) -> bool:
         raise NotImplementedError
 
-    @abstractmethod
-    def ingest(self, data: Any) -> None:
+    @abc.abstractmethod
+    def ingest(self, data: typing.Any) -> None:
         raise NotImplementedError
 
     def _store(self, payload: str) -> None:
         self._queue.append((self._next_rank, payload))
         self._next_rank += 1
 
-    def output(self) -> Tuple[int, str]:
+    def output(self) -> typing.Tuple[int, str]:
         if not self._queue:
             raise IndexError("No data to output")
         return self._queue.pop(0)
 
 
-NumericInput = Union[int, float, List[Union[int, float]]]
-TextInput = Union[str, List[str]]
-LogEntry = Dict[str, str]
-LogInput = Union[LogEntry, List[LogEntry]]
+NumericScalar = typing.Union[int, float]
+NumericInput = typing.Union[NumericScalar, typing.List[NumericScalar]]
+
+TextInput = typing.Union[str, typing.List[str]]
+
+LogEntry = typing.Dict[str, str]
+LogInput = typing.Union[LogEntry, typing.List[LogEntry]]
 
 
 class NumericProcessor(DataProcessor):
-    def validate(self, data: Any) -> bool:
+    def validate(self, data: typing.Any) -> bool:
         if isinstance(data, bool):
             return False
         if isinstance(data, (int, float)):
@@ -57,7 +60,7 @@ class NumericProcessor(DataProcessor):
 
 
 class TextProcessor(DataProcessor):
-    def validate(self, data: Any) -> bool:
+    def validate(self, data: typing.Any) -> bool:
         if isinstance(data, str):
             return True
         if isinstance(data, list):
@@ -77,7 +80,7 @@ class TextProcessor(DataProcessor):
 
 
 class LogProcessor(DataProcessor):
-    def validate(self, data: Any) -> bool:
+    def validate(self, data: typing.Any) -> bool:
         if isinstance(data, dict):
             return all(
                 isinstance(k, str) and isinstance(v, str)
@@ -115,8 +118,10 @@ class LogProcessor(DataProcessor):
         self._store(self._format_entry(data))
 
 
-def _extract_n(processor: DataProcessor, n: int) -> List[Tuple[int, str]]:
-    extracted: List[Tuple[int, str]] = []
+def _extract_n(
+    processor: DataProcessor, n: int
+) -> typing.List[typing.Tuple[int, str]]:
+    extracted: typing.List[typing.Tuple[int, str]] = []
     for _ in range(n):
         extracted.append(processor.output())
     return extracted
@@ -135,12 +140,11 @@ if __name__ == "__main__":
 
     print("Test invalid ingestion of string 'foo' without prior validation:")
     try:
-        bad_numeric: Any = "foo"
-        numeric.ingest(bad_numeric)
+        numeric.ingest("foo")
     except Exception as exc:
         print(f"Got exception: {exc}")
 
-    numeric_data: List[Union[int, float]] = [1, 2, 3, 4, 5]
+    numeric_data: typing.List[NumericScalar] = [1, 2, 3, 4, 5]
     print(f"Processing data: {numeric_data}")
     numeric.ingest(numeric_data)
     numeric_extract = 3

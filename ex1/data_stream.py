@@ -4,7 +4,7 @@ import typing
 
 class DataProcessor(abc.ABC):
     def __init__(self) -> None:
-        self._queue: list[tuple[int, str]] = []
+        self._queue: typing.List[typing.Tuple[int, str]] = []
         self._next_rank = 0
 
     @abc.abstractmethod
@@ -19,7 +19,7 @@ class DataProcessor(abc.ABC):
         self._queue.append((self._next_rank, payload))
         self._next_rank += 1
 
-    def output(self) -> tuple[int, str]:
+    def output(self) -> typing.Tuple[int, str]:
         if not self._queue:
             raise IndexError("No data to output")
         return self._queue.pop(0)
@@ -31,10 +31,13 @@ class DataProcessor(abc.ABC):
         return len(self._queue)
 
 
-NumericInput = int | float | list[int | float]
-TextInput = str | list[str]
-LogEntry = dict[str, str]
-LogInput = LogEntry | list[LogEntry]
+NumericScalar = typing.Union[int, float]
+NumericInput = typing.Union[NumericScalar, typing.List[NumericScalar]]
+
+TextInput = typing.Union[str, typing.List[str]]
+
+LogEntry = typing.Dict[str, str]
+LogInput = typing.Union[LogEntry, typing.List[LogEntry]]
 
 
 class NumericProcessor(DataProcessor):
@@ -121,12 +124,12 @@ class LogProcessor(DataProcessor):
 
 class DataStream:
     def __init__(self) -> None:
-        self._processors: list[DataProcessor] = []
+        self._processors: typing.List[DataProcessor] = []
 
     def register_processor(self, proc: DataProcessor) -> None:
         self._processors.append(proc)
 
-    def process_stream(self, stream: list[typing.Any]) -> None:
+    def process_stream(self, stream: typing.List[typing.Any]) -> None:
         for element in stream:
             handled = False
             for proc in self._processors:

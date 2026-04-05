@@ -4,7 +4,7 @@ import typing
 
 class DataProcessor(abc.ABC):
     def __init__(self) -> None:
-        self._queue: list[tuple[int, str]] = []
+        self._queue: typing.List[typing.Tuple[int, str]] = []
         self._next_rank = 0
 
     @abc.abstractmethod
@@ -19,7 +19,7 @@ class DataProcessor(abc.ABC):
         self._queue.append((self._next_rank, payload))
         self._next_rank += 1
 
-    def output(self) -> tuple[int, str]:
+    def output(self) -> typing.Tuple[int, str]:
         if not self._queue:
             raise IndexError("No data to output")
         return self._queue.pop(0)
@@ -31,10 +31,13 @@ class DataProcessor(abc.ABC):
         return len(self._queue)
 
 
-NumericInput = int | float | list[int | float]
-TextInput = str | list[str]
-LogEntry = dict[str, str]
-LogInput = LogEntry | list[LogEntry]
+NumericScalar = typing.Union[int, float]
+NumericInput = typing.Union[NumericScalar, typing.List[NumericScalar]]
+
+TextInput = typing.Union[str, typing.List[str]]
+
+LogEntry = typing.Dict[str, str]
+LogInput = typing.Union[LogEntry, typing.List[LogEntry]]
 
 
 class NumericProcessor(DataProcessor):
@@ -120,7 +123,7 @@ class LogProcessor(DataProcessor):
 
 
 class ExportPlugin(typing.Protocol):
-    def process_output(self, data: list[tuple[int, str]]) -> None:
+    def process_output(self, data: typing.List[typing.Tuple[int, str]]) -> None:
         ...
 
 
@@ -131,7 +134,7 @@ def _csv_escape(value: str) -> str:
 
 
 def _json_escape(value: str) -> str:
-    escaped_parts: list[str] = []
+    escaped_parts: typing.List[str] = []
     for ch in value:
         if ch == "\\":
             escaped_parts.append("\\\\")
@@ -155,7 +158,7 @@ def _json_escape(value: str) -> str:
 
 
 class CsvExportPlugin:
-    def process_output(self, data: list[tuple[int, str]]) -> None:
+    def process_output(self, data: typing.List[typing.Tuple[int, str]]) -> None:
         if not data:
             return
         line = ",".join(_csv_escape(value) for _, value in data)
@@ -164,7 +167,7 @@ class CsvExportPlugin:
 
 
 class JsonExportPlugin:
-    def process_output(self, data: list[tuple[int, str]]) -> None:
+    def process_output(self, data: typing.List[typing.Tuple[int, str]]) -> None:
         if not data:
             return
         pairs = [
@@ -177,12 +180,12 @@ class JsonExportPlugin:
 
 class DataStream:
     def __init__(self) -> None:
-        self._processors: list[DataProcessor] = []
+        self._processors: typing.List[DataProcessor] = []
 
     def register_processor(self, proc: DataProcessor) -> None:
         self._processors.append(proc)
 
-    def process_stream(self, stream: list[typing.Any]) -> None:
+    def process_stream(self, stream: typing.List[typing.Any]) -> None:
         for element in stream:
             handled = False
             for proc in self._processors:
@@ -204,7 +207,7 @@ class DataStream:
 
     def output_pipeline(self, nb: int, plugin: ExportPlugin) -> None:
         for proc in self._processors:
-            extracted: list[tuple[int, str]] = []
+            extracted: typing.List[typing.Tuple[int, str]] = []
             for _ in range(nb):
                 try:
                     extracted.append(proc.output())
